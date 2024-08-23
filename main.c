@@ -3,10 +3,18 @@
 #include <string.h>
 #include <windows.h>
 
+// Declaracao de prototipo das funções utilizadas
 void menu();
 void cadastrarAluno();
 void consultarAluno();
+int alunosCadastrados(int alunosCD);
+void atualizarArquivo(int op);
+void ajudaMenu();
+void cleanBuffer();
+void clearTerminal();
 
+
+// Declaracao de variaveis globais que serao utilizadas no código
 FILE *file;
 
 int userInput = 0;
@@ -14,18 +22,22 @@ int alunosCD = 0;
 int idAluno = 0;
 
 
+
+
 int main(){
+    // O programa buscará pelo arquivo .txt no diretório do projeto, e caso não encontre,
+    // criará um novo.
     file = fopen("text.txt", "r");
     if(file == NULL){
-        char *temp = malloc(sizeof(char));
         printf("O arquivo nao foi encontrado no diretorio.\n\n");
         printf("Criando novo arquivo...");
         file = fopen("text.txt", "a");
         fprintf(file, "[ARQUIVO] - 0 alunos cadastrados.\n");
-        printf("Arquivo criado com sucesso!\n\nDigite qualquer tecla para prosseguir.\n>> ");
-        scanf("%d", temp);
-        free(temp);
+        printf("Arquivo criado com sucesso!\n");
+        Sleep(3000);
     }
+    //Após ter encontrado ou não o arquivo text.txt, fechamos o arquivo e chamamos a função
+    // que exibirá o MENU.
     fclose(file);
     menu();
 
@@ -37,12 +49,17 @@ int main(){
 }
 
 void menu(){
+
     clearTerminal();
-    alunosCD = alunosCadastrados(alunosCD);
-    printf("\n - Alunos cadastrados: %d - \n", alunosCD);
-    printf("\n- - - CONSULTA - - - \n");
+    // Verificar se essa parte é essencial -> alunosCD = alunosCadastrados(alunosCD);
+    printf(" ________________________\n");
+    printf("|    MENU DE CONSULTA    |\n");
+    printf("|________________________|\n\n");
     printf("[1] Cadastrar aluno\n[2] Consultar alunos\n[3] Ajuda\n[4] Sair\n>> ");
     scanf("%d", &userInput);
+
+    // Após exibir o menu, o valor que o usuario digitar o levara para uma das opcoes do MENU
+
     switch(userInput){
         case 1:{
             clearTerminal();
@@ -59,18 +76,25 @@ void menu(){
             ajudaMenu();
         }
         case 4:{
-
+            printf("Programa finalizado!\n");
             break;
+        }
+        default:{
+            printf("Valor invalido.\n");
+            Sleep(1350);
+            menu();
         }
     }
 
 }
 
-
+// Função que lida com o menu de cadastro de alunos
 void cadastrarAluno(){
-
+    printf(" ________________________\n");
+    printf("|  CADASTRO DE ALUNOS    |\n");
+    printf("|________________________|\n\n");
     userInput = 1;
-    while(userInput != 0){
+    while(userInput == 1){
         cleanBuffer();
 
         file = fopen("text.txt", "a");
@@ -82,7 +106,10 @@ void cadastrarAluno(){
         scanf("%d", &matricula);
         printf("Cadastrar aluno %s de matricula %d?\n>> ", name, matricula);
         scanf("%d", &userInput);
-        if(userInput != 0){
+        // Caso o usuário confirmar que deseja cadastrar o aluno, ele será enviado para a função
+        // atualizarArquivo, que realizará o cadastro do aluno no arquivo text.txt
+
+        if(userInput == 1){
             fprintf(file, "(%d) Aluno: %s - Matricula: %d\n", alunosCD + 1, name, matricula);
             alunosCD++;
             fclose(file);
@@ -90,15 +117,25 @@ void cadastrarAluno(){
             printf("Aluno cadastrado!\nGostaria de continuar cadastrando?\n>> ");
             scanf("%d", &userInput);
         }
+        else{
+            fclose(file);
+            menu();
+        }
     }
 
     menu();
 
 }
 
+// Função que cuidará do menu de consulta de alunos.
 void consultarAluno(){
+    // Ao receber o valor retornado da função alunosCadastrados(), alunosCD atualiza seu valor baseado
+    // no que está registrado no arquivo.
+
+    alunosCD = alunosCadastrados(alunosCD);
+    clearTerminal();
     char userConfirm;
-    // Stream no topo do arquivo
+
     file = fopen("text.txt", "r");
     rewind(file);
     char info;
@@ -107,6 +144,7 @@ void consultarAluno(){
         printf("%c", info);
     }
     fclose(file);
+
     printf("\n[1] Remover aluno\n[2] Voltar para o menu\n>> ");
     scanf("%d", &userConfirm);
     if(userConfirm == 1){
@@ -116,6 +154,9 @@ void consultarAluno(){
 
 }
 
+// A função alunosCadastrados posiciona a Stream do arquivo no lugar exato do numero de alunos
+// cadastrados, pegando esse valor e armazenando em um variável para ser tratado pelo programa.
+
 int alunosCadastrados(int alunosCD){
     file = fopen("text.txt", "r");
     fseek(file, 12, SEEK_SET);
@@ -123,6 +164,8 @@ int alunosCadastrados(int alunosCD){
     fclose(file);
     return alunosCD;
 }
+
+// A função atualizarArquivo é responsável por
 
 void atualizarArquivo(int op){
 
@@ -158,11 +201,11 @@ void atualizarArquivo(int op){
 
         case 2:{
             if(alunosCD != 0){
-                FILE *fileTemp = fopen("temp.txt", "w");
                 int userID = 0, nCount = 0, idCount = 0;
                 printf("Digite o ID do aluno que deseja REMOVER: ");
                 scanf("%d", &userID);
                 if(userID <= alunosCD){
+                    FILE *fileTemp = fopen("temp.txt", "w");
                     fprintf(fileTemp, "[ARQUIVO] - %d alunos cadastrados.\n", alunosCD - 1);
                     file = fopen("text.txt", "r");
                     char c;
@@ -197,6 +240,9 @@ void atualizarArquivo(int op){
                     }
                     remove("text.txt");
                     rename("temp.txt", "text.txt");
+                    printf("\nAluno removido!");
+                    Sleep(1350);
+                    consultarAluno();
 
                 }
                 else{
@@ -234,6 +280,7 @@ void cleanBuffer(){
     while ((c = getchar()) != '\n' && c != EOF);
 }
 
+// Sua função é basicamente limpar o que esta printado no terminal
 void clearTerminal(){
     system("cls");
 }
