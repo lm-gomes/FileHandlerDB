@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <windows.h>
+#include <openssl/sha.h>
 
 // Declaracao de prototipo das funções utilizadas
 void menu();
@@ -16,18 +17,89 @@ void clearTerminal();
 
 // Declaracao de variaveis globais que serao utilizadas no código
 FILE *file;
+FILE *loginFile;
 
 int userInput = 0;
 int alunosCD = 0;
 int idAluno = 0;
 
 
+typedef struct {
+    char user[50];
+    unsigned char password[SHA256_DIGEST_LENGTH];
+} Login;
 
+void hashPassword(const char *password, unsigned char *hashOutput){
+    SHA256((unsigned char*)password, strlen(password), hashOutput);
+}
+
+
+int login(){
+    Login login;
+    char user[50];
+    char password[50];
+    unsigned char passwordHash[SHA256_DIGEST_LENGTH];
+
+    loginFile = fopen("login.txt", "rb");
+    if(loginFile == NULL){
+        loginFile = fopen("login.txt", "ab");
+        printf(" ________________________\n");
+        printf("|        REGISTRO        |\n");
+        printf("|________________________|\n\n");
+        printf("Digite o nome do usuario: ");
+        scanf("%s", &login.user);
+        printf("Digite a senha: ");
+        scanf("%s", password);
+        hashPassword(password, login.password);
+        fwrite(&login, sizeof(Login), 1, loginFile);
+        fclose(loginFile);
+        printf("Usuario cadastrado!\n");
+        Sleep(2000);
+        return 1;
+    }
+    else{
+        printf(" ________________________\n");
+        printf("|         LOGIN          |\n");
+        printf("|________________________|\n\n");
+        printf("Usuario: ");
+        scanf("%s", user);
+        printf("Senha: ");
+        scanf("%s", password);
+        hashPassword(password, passwordHash);
+        fread(&login, sizeof(Login), 1, loginFile);
+
+
+        if(strcmp(user, login.user) == 0){
+            if(memcmp(login.password, passwordHash, SHA256_DIGEST_LENGTH) == 0){
+                return 1;
+            }
+            else{
+                return 0;
+            }
+        }
+        else{
+            return 0;
+        }
+
+    }
+
+}
 
 int main(){
+    if(login() == 1){
+        printf("Acesso permitido!\n");
+        Sleep(2000);
+    }
+    else{
+        printf("Acesso negado!\n");
+        return 0;
+    }
+
+
     // O programa buscará pelo arquivo .txt no diretório do projeto, e caso não encontre,
     // criará um novo.
     file = fopen("text.txt", "r");
+
     if(file == NULL){
         printf("O arquivo nao foi encontrado no diretorio.\n\n");
         printf("Criando novo arquivo...");
@@ -57,6 +129,8 @@ void menu(){
     printf("|________________________|\n\n");
     printf("[1] Cadastrar aluno\n[2] Consultar alunos\n[3] Ajuda\n[4] Sair\n>> ");
     scanf("%d", &userInput);
+    printf("%d", userInput);
+
 
     // Após exibir o menu, o valor que o usuario digitar o levara para uma das opcoes do MENU
 
@@ -74,10 +148,11 @@ void menu(){
         case 3:{
             clearTerminal();
             ajudaMenu();
+            break;
         }
         case 4:{
             printf("Programa finalizado!\n");
-            break;
+            return 0;
         }
         default:{
             printf("Valor invalido.\n");
@@ -149,8 +224,11 @@ void consultarAluno(){
     scanf("%d", &userConfirm);
     if(userConfirm == 1){
         atualizarArquivo(2);
+
     }
-    menu();
+    else{
+        menu();
+    }
 
 }
 
@@ -209,7 +287,30 @@ void atualizarArquivo(int op){
                     fprintf(fileTemp, "[ARQUIVO] - %d alunos cadastrados.\n", alunosCD - 1);
                     file = fopen("text.txt", "r");
                     char c;
-                    for(int i = 1;; i++){
+
+                    while(c != EOF){
+                                                c = fgetc(file);
+                        if(c == EOF) break;
+                        if(nCount >= 1){
+                            if(nCount != userID){
+                                fputc(c, fileTemp);
+                                if(c == '('){
+                                    idCount++;
+                                    fseek(file, 1, SEEK_CUR);
+                                    fprintf(fileTemp, "%d", idCount);
+                                    while(c != ')'){
+                                        c = fgetc(file);
+                                    }
+                                    fputc(c, fileTemp);
+                                    }
+                                }
+
+                            }
+                        if(c == '\n'){nCount++;};
+                    }
+
+
+                    /*for(int i = 1;; i++){
                         c = fgetc(file);
                         if(c == EOF) break;
                         if(nCount >= 1){
@@ -230,6 +331,7 @@ void atualizarArquivo(int op){
                         if(c == '\n'){nCount++;};
 
                     }
+                    */
                     fclose(file);
                     fclose(fileTemp);
                     if(fclose(file) != EOF){
@@ -242,12 +344,13 @@ void atualizarArquivo(int op){
                     rename("temp.txt", "text.txt");
                     printf("\nAluno removido!");
                     Sleep(1350);
-                    consultarAluno();
+                    //consultarAluno();
 
                 }
                 else{
                     printf("Nao existe aluno com esse ID!\n");
                     Sleep(2000);
+
                 }
             }
 
@@ -256,12 +359,14 @@ void atualizarArquivo(int op){
                 Sleep(2000);
 
             }
+            consultarAluno();
                 break;
 
         };
     }
 
 }
+
 
 void ajudaMenu(){
     int userAjuda = 0;
