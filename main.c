@@ -165,11 +165,20 @@ void menu(){
 
 // Função que lida com o menu de cadastro de alunos
 void cadastrarAluno(){
+    /*
     printf(" ________________________\n");
     printf("|  CADASTRO DE ALUNOS    |\n");
     printf("|________________________|\n\n");
+    */
+
     userInput = 1;
     while(userInput == 1){
+        alunosCD = alunosCadastrados(alunosCD);
+        clearTerminal();
+        printf(" ________________________\n");
+        printf("|  CADASTRO DE ALUNOS    |\n");
+        printf("|________________________|\n\n");
+
         cleanBuffer();
 
         file = fopen("text.txt", "a");
